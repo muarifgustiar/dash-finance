@@ -1,0 +1,147 @@
+// Prisma schema - Database models for Dash Finance
+// docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// Enums
+// ============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+// ============================================
+// Models
+// ============================================
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name         String
+  passwordHash String     @map("password_hash")
+  role         UserRole   @default(USER)
+  status       UserStatus @default(ACTIVE)
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  userAccess   UserAccess[]
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@map("users")
+  @@index([email])
+  @@index([role])
+}
+
+model BudgetOwner {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String?  @unique
+  description String?
+  status      Status   @default(ACTIVE)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  budgets      Budget[]
+  transactions Transaction[]
+  userAccess   UserAccess[]
+
+  @@map("budget_owners")
+  @@index([status])
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  status      Status   @default(ACTIVE)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  transactions Transaction[]
+
+  @@map("categories")
+  @@index([status])
+}
+
+model Budget {
+  id              String   @id @default(uuid())
+  budgetOwnerId   String   @map("budget_owner_id")
+  year            Int
+  amountPlanned   Decimal  @db.Decimal(15, 2) @map("amount_planned")
+  amountRevised   Decimal? @db.Decimal(15, 2) @map("amount_revised")
+  createdBy       String   @map("created_by")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  budgetOwner     BudgetOwner @relation(fields: [budgetOwnerId], references: [id], onDelete: Cascade)
+  creator         User        @relation(fields: [createdBy], references: [id])
+
+  @@unique([budgetOwnerId, year])
+  @@index([budgetOwnerId])
+  @@index([year])
+  @@index([createdBy])
+  @@map("budgets")
+}
+
+model Transaction {
+  id              String   @id @default(uuid())
+  budgetOwnerId   String   @map("budget_owner_id")
+  categoryId      String   @map("category_id")
+  date            DateTime
+  amount          Decimal  @db.Decimal(15, 2)
+  description     String
+  receiptUrl      String?  @map("receipt_url")
+  createdBy       String   @map("created_by")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  budgetOwner     BudgetOwner @relation(fields: [budgetOwnerId], references: [id], onDelete: Cascade)
+  category        Category    @relation(fields: [categoryId], references: [id])
+  creator         User        @relation(fields: [createdBy], references: [id])
+
+  @@index([budgetOwnerId])
+  @@index([categoryId])
+  @@index([date])
+  @@index([createdBy])
+  @@map("transactions")
+}
+
+model UserAccess {
+  userId          String   @map("user_id")
+  budgetOwnerId   String   @map("budget_owner_id")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budgetOwner     BudgetOwner  @relation(fields: [budgetOwnerId], references: [id], onDelete: Cascade)
+
+  @@id([userId, budgetOwnerId])
+  @@index([userId])
+  @@index([budgetOwnerId])
+  @@map("user_access")
+}
