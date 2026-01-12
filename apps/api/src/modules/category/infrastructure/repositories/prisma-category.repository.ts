@@ -4,12 +4,16 @@
  * Maps Prisma models ↔ Domain entities
  */
 
-import type { PaginationParams } from "@repo/domain/types";
-import type { ICategoryRepository } from "../../domain/repositories/category-repository.interface";
+import type { 
+  CategoryRepository, 
+  CreateCategoryData, 
+  UpdateCategoryData 
+} from "../../domain/repositories/category-repository";
 import { Category } from "../../domain/entities/category";
 import { prisma } from "../../../../shared/db/prisma";
+import { randomUUID } from "crypto";
 
-export class PrismaCategoryRepository implements ICategoryRepository {
+export class PrismaCategoryRepository implements CategoryRepository {
   async findById(id: string): Promise<Category | null> {
     const category = await prisma.category.findUnique({ where: { id } });
     if (!category) return null;
@@ -26,11 +30,10 @@ export class PrismaCategoryRepository implements ICategoryRepository {
 
   async findAll(
     filters?: {
-      status?: "ACTIVE" | "INACTIVE";
+      status?: string;
       search?: string;
-    },
-    pagination?: PaginationParams
-  ): Promise<{ items: Category[]; total: number }> {
+    }
+  ): Promise<Category[]> {
     const where: any = {};
     
     if (filters?.status) {
@@ -43,54 +46,33 @@ export class PrismaCategoryRepository implements ICategoryRepository {
       ];
     }
 
-    if (!pagination) {
-      // Unpaginated mode
-      const categories = await prisma.category.findMany({ 
-        where,
-        orderBy: { name: "asc" },
-      });
-      return {
-        items: categories.map((c) => this.toDomain(c)),
-        total: categories.length,
-      };
-    }
-
-    // Paginated mode
-    const [categories, total] = await Promise.all([
-      prisma.category.findMany({
-        where,
-        orderBy: { name: "asc" },
-        skip: (pagination.page - 1) * pagination.limit,
-        take: pagination.limit,
-      }),
-      prisma.category.count({ where }),
-    ]);
-
-    return {
-      items: categories.map((c) => this.toDomain(c)),
-      total,
-    };
+    const categories = await prisma.category.findMany({ 
+      where,
+      orderBy: { name: "asc" },
+    });
+    
+    return categories.map((c) => this.toDomain(c));
   }
 
-  async create(category: Category): Promise<Category> {
+  async create(data: CreateCategoryData): Promise<Category> {
     const created = await prisma.category.create({
       data: {
-        id: category.id,
-        name: category.name,
-        description: category.description,
-        status: category.status,
+        id: randomUUID(),
+        name: data.name,
+        description: data.description,
+        status: data.status,
       },
     });
     return this.toDomain(created);
   }
 
-  async update(category: Category): Promise<Category> {
+  async update(id: string, data: UpdateCategoryData): Promise<Category> {
     const updated = await prisma.category.update({
-      where: { id: category.id },
+      where: { id },
       data: {
-        name: category.name,
-        description: category.description,
-        status: category.status,
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.status !== undefined && { status: data.status }),
       },
     });
     return this.toDomain(updated);

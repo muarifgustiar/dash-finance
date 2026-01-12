@@ -2,7 +2,7 @@
  * Update Category Use Case - Application Layer
  */
 
-import type { ICategoryRepository } from "../../domain/repositories/category-repository.interface";
+import type { CategoryRepository, UpdateCategoryData } from "../../domain/repositories/category-repository";
 import { Category } from "../../domain/entities/category";
 import { ErrNotFound, ErrDuplicate } from "../../../../shared/errors";
 
@@ -14,7 +14,7 @@ export interface UpdateCategoryDTO {
 }
 
 export class UpdateCategoryUseCase {
-  constructor(private readonly repository: ICategoryRepository) {}
+  constructor(private readonly repository: CategoryRepository) {}
 
   async execute(dto: UpdateCategoryDTO): Promise<Category> {
     // Find existing

@@ -7,16 +7,25 @@ import { describe, expect, it, mock } from "bun:test";
 import { DeleteCategoryUseCase } from "../delete-category.use-case";
 import { Category } from "../../../domain/entities/category";
 import { ErrNotFound } from "../../../../../shared/errors";
-import type { ICategoryRepository } from "../../../domain/repositories/category-repository.interface";
+import type { 
+  CategoryRepository, 
+  CreateCategoryData, 
+  UpdateCategoryData 
+} from "../../../domain/repositories/category-repository";
 
 describe("DeleteCategoryUseCase", () => {
-  const createMockRepository = (): ICategoryRepository => ({
+  const createMockRepository = (): CategoryRepository => ({
     findById: mock(async () => null),
     findByName: mock(async () => null),
-    findAll: mock(async () => ({ items: [], total: 0 })),
-    create: mock(async (cat) => cat),
-    update: mock(async (cat) => cat),
+    findAll: mock(async () => []),
+    create: mock(async (data: CreateCategoryData) => 
+      new Category("new-id", data.name, data.description, data.status, new Date(), new Date())
+    ),
+    update: mock(async (id: string, data: UpdateCategoryData) => 
+      new Category(id, data.name || "Test", data.description || null, data.status || "ACTIVE", new Date(), new Date())
+    ),
     delete: mock(async () => {}),
+    hasTransactions: mock(async () => false),
   });
 
   describe("Successful deletion", () => {

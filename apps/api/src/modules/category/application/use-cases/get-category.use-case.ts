@@ -2,12 +2,12 @@
  * Get Category Use Case - Application Layer
  */
 
-import type { ICategoryRepository } from "../../domain/repositories/category-repository.interface";
+import type { CategoryRepository } from "../../domain/repositories/category-repository";
 import { Category } from "../../domain/entities/category";
 import { ErrNotFound } from "../../../../shared/errors";
 
 export class GetCategoryUseCase {
-  constructor(private readonly repository: ICategoryRepository) {}
+  constructor(private readonly repository: CategoryRepository) {}
 
   async execute(id: string): Promise<Category> {
     const category = await this.repository.findById(id);

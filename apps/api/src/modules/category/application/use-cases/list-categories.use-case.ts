@@ -3,7 +3,7 @@
  */
 
 import { calculatePaginationMeta, type PaginationMeta } from "@repo/domain/types";
-import type { ICategoryRepository } from "../../domain/repositories/category-repository.interface";
+import type { CategoryRepository } from "../../domain/repositories/category-repository";
 import { Category } from "../../domain/entities/category";
 
 export interface ListCategoriesDTO {
@@ -20,7 +20,7 @@ export interface ListCategoriesResult {
 }
 
 export class ListCategoriesUseCase {
-  constructor(private readonly repository: ICategoryRepository) {}
+  constructor(private readonly repository: CategoryRepository) {}
 
   async execute(dto?: ListCategoriesDTO): Promise<ListCategoriesResult> {
     const page = dto?.page ?? 1;

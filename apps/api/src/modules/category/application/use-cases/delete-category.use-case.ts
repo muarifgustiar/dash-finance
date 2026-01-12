@@ -2,11 +2,11 @@
  * Delete Category Use Case - Application Layer
  */
 
-import type { ICategoryRepository } from "../../domain/repositories/category-repository.interface";
+import type { CategoryRepository } from "../../domain/repositories/category-repository";
 import { ErrNotFound } from "../../../../shared/errors";
 
 export class DeleteCategoryUseCase {
-  constructor(private readonly repository: ICategoryRepository) {}
+  constructor(private readonly repository: CategoryRepository) {}
 
   async execute(id: string): Promise<void> {
     const existing = await this.repository.findById(id);

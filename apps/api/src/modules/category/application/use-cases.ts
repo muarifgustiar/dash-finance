@@ -54,7 +54,7 @@ export class CreateCategoryUseCase {
 export interface UpdateCategoryCommand {
   name?: string;
   description?: string;
-  status?: string;
+  status?: "ACTIVE" | "INACTIVE";
 }
 
 export class UpdateCategoryUseCase {
