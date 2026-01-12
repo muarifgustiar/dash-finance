@@ -21,6 +21,12 @@ Dash Finance is a budget management system designed for organizational budget tr
 - **Forms**: TanStack Form with Zod validation
 - **State Management**: TanStack Query
 
+### Styling (Web)
+- **Tailwind CSS**: v4.1, `darkMode: "class"`
+- **Content globs**: `apps/web/app/**/*.{ts,tsx,mdx}`, `apps/web/src/**/*.{ts,tsx,mdx}`, `packages/ui/src/**/*.{ts,tsx,mdx}`
+- **PostCSS order**: `tailwindcss` → `autoprefixer`
+- **Theme tokens**: extend in `apps/web/tailwind.config.js`; preserve current palette/radius when adding new tokens
+
 ### Infrastructure
 - **Containerization**: Docker + Docker Compose
 - **Package Manager**: Bun workspaces

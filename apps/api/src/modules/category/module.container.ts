@@ -3,7 +3,6 @@
  * ✅ Wires concrete implementations
  */
 
-import type { PrismaClient } from "@prisma/client";
 import { PrismaCategoryRepository } from "./infrastructure/repositories/prisma-category.repository";
 import {
   GetCategoriesUseCase,
@@ -13,9 +12,9 @@ import {
   DeleteCategoryUseCase,
 } from "./application/use-cases";
 
-export function createCategoryModule(prisma: PrismaClient) {
+export function createCategoryModule() {
   // Infrastructure
-  const categoryRepository = new PrismaCategoryRepository(prisma);
+  const categoryRepository = new PrismaCategoryRepository();
 
   // Application use cases
   const getCategoriesUseCase = new GetCategoriesUseCase(categoryRepository);

@@ -45,7 +45,7 @@ services:
       - dash_finance_network
     command: bun run dev
 
-  # Next.js Web Service
+  # Next.js Web Service (Development)
   web:
     build:
       context: .
@@ -54,7 +54,10 @@ services:
     container_name: dash_finance_web
     restart: unless-stopped
     environment:
+      # Development mode (not used by Next.js env loading, just for info)
       NODE_ENV: development
+      # NEXT_PUBLIC_ variables are loaded from .env.development by Next.js
+      # Override here if needed for Docker networking
       NEXT_PUBLIC_API_URL: http://api:3001
     ports:
       - "3000:3000"

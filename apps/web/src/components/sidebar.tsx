@@ -69,8 +69,8 @@ export function Sidebar() {
                   : "text-gray-600 hover:bg-gray-50"
               }`}
             >
-              <span className="text-lg">{item.icon}</span>
-              <span>{item.label}</span>
+              <item.icon className="w-5 h-5" />
+              <span>{item.name}</span>
             </Link>
           );
         })}

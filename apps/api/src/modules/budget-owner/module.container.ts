@@ -13,9 +13,9 @@ import {
   DeleteBudgetOwnerUseCase,
 } from "./application/use-cases";
 
-export function createBudgetOwnerModule(prisma: PrismaClient) {
+export function createBudgetOwnerModule() {
   // Infrastructure
-  const budgetOwnerRepository = new PrismaBudgetOwnerRepository(prisma);
+  const budgetOwnerRepository = new PrismaBudgetOwnerRepository();
 
   // Application use cases
   const getBudgetOwnersUseCase = new GetBudgetOwnersUseCase(budgetOwnerRepository);

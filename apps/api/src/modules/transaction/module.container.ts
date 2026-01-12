@@ -13,9 +13,9 @@ import {
   DeleteTransactionUseCase,
 } from "./application/use-cases";
 
-export function createTransactionModule(prisma: PrismaClient) {
+export function createTransactionModule() {
   // Infrastructure
-  const transactionRepository = new PrismaTransactionRepository(prisma);
+  const transactionRepository = new PrismaTransactionRepository();
 
   // Application use cases
   const getTransactionsUseCase = new GetTransactionsUseCase(transactionRepository);

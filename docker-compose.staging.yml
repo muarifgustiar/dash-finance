@@ -1,0 +1,24 @@
+# Docker Compose - Staging Environment
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.staging.yml up
+#
+# IMPORTANT: NEXT_PUBLIC_ variables must be passed as build args (not runtime env)
+# They are inlined into the JavaScript bundle at build time.
+#
+# Example:
+#   docker-compose -f docker-compose.yml -f docker-compose.staging.yml build \
+#     --build-arg NEXT_PUBLIC_API_URL=https://api-staging.yourdomain.com
+
+services:
+  web:
+    build:
+      target: runner
+      args:
+        # These MUST be provided at build time
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-staging.dashfinance.example.com}
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Dash Finance (Staging)}
+        NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-0.1.0}
+        NEXT_PUBLIC_ENABLE_DEBUG: ${NEXT_PUBLIC_ENABLE_DEBUG:-true}
+        NEXT_PUBLIC_ENABLE_ANALYTICS: ${NEXT_PUBLIC_ENABLE_ANALYTICS:-false}
+    environment:
+      NODE_ENV: production
+    volumes: []

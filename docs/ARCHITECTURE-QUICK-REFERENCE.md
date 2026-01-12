@@ -1,5 +1,62 @@
 # Architecture Quick Reference
 
+> **Note:** This is a practical guide with examples. For formal architecture requirements and automated validation, see the **[Formal Architecture Specifications](#formal-specifications)** section below.
+
+---
+
+## Formal Specifications
+
+The project follows Clean Architecture + Domain-Driven Design (DDD) patterns with formal, machine-readable specifications:
+
+### 📋 Capability Specifications
+
+All architecture rules are documented as testable requirements in `openspec/changes/codify-architecture-rules/specs/`:
+
+1. **[Clean Architecture Layering](../openspec/changes/codify-architecture-rules/specs/clean-architecture-layering/spec.md)**
+   - **ARCH-001**: Inward-only dependency rule (outer layers depend on inner, never reverse)
+   - **ARCH-002**: Layer responsibilities (Presentation → Application → Domain ← Infrastructure)
+   - **ARCH-003**: Constructor injection for use cases (no global state)
+   - **ARCH-004**: Pure domain layer (zero external dependencies)
+   - **ARCH-005**: Infrastructure returns domain objects (not persistence models)
+   - **ARCH-006**: Elysia plugin pattern with `.decorate()` and `.model()`
+   - **ARCH-007**: Elysia scope management (local/scoped/global)
+   - **ARCH-008**: Elysia guard pattern for route groups
+
+2. **[Boundary Constraints](../openspec/changes/codify-architecture-rules/specs/boundary-constraints/spec.md)**
+   - **BOUND-001**: No cross-feature imports (Web bounded contexts)
+   - **BOUND-002**: No cross-module imports (API bounded contexts)
+   - **BOUND-003**: Allowed import patterns (Web)
+   - **BOUND-004**: Allowed import patterns (API)
+   - **BOUND-005**: Forbidden import patterns (all apps)
+
+3. **[Dependency Management](../openspec/changes/codify-architecture-rules/specs/dependency-management/spec.md)**
+   - **DEP-001**: Pure domain layer (zero external dependencies)
+   - **DEP-002**: Zod for boundaries only (HTTP/form validation)
+   - **DEP-003**: Universal constants in `@repo/domain` (error codes, HTTP status, type utilities)
+   - **DEP-004**: Constructor injection pattern (use cases receive dependencies)
+   - **DEP-005**: Shared packages structure (`@repo/domain`, `@repo/schema`, `@repo/ui`)
+   - **DEP-006**: Infrastructure returns domain objects (not persistence models)
+
+4. **[Code Conventions](../openspec/changes/codify-architecture-rules/specs/code-conventions/spec.md)**
+   - **CONV-001**: File/directory naming (kebab-case)
+   - **CONV-002**: Code identifier naming (PascalCase/camelCase/SCREAMING_SNAKE_CASE)
+   - **CONV-003**: Language usage (English identifiers, Bahasa Indonesia UI text)
+   - **CONV-004**: Testing priorities (domain → application → handler → integration)
+   - **CONV-005**: Module organization (domain/application/infrastructure/delivery structure)
+   - **CONV-006**: Import statement conventions (`.js` extensions, explicit paths)
+   - **CONV-007**: Documentation standards (JSDoc for public APIs)
+
+### 🔍 Validation
+
+All specifications are validated with OpenSpec:
+```bash
+openspec validate codify-architecture-rules --strict
+```
+
+Each requirement includes Given/When/Then scenarios for testable validation.
+
+---
+
 ## Two-Tier Domain Model
 
 ### @repo/domain (Shared Kernel)

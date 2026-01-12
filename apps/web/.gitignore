@@ -26,7 +26,14 @@ yarn-debug.log*
 yarn-error.log*
 
 # env files (can opt-in for commiting if needed)
-.env*
+.env*.local
+.env.local
+
+# Environment files committed to repo:
+# .env.development
+# .env.staging
+# .env.production
+# .env.local.example
 
 # vercel
 .vercel

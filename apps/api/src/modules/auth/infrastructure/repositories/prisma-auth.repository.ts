@@ -2,6 +2,23 @@ import type { PrismaClient } from "@prisma/client";
 import type { User } from "../../domain/entities/user";
 import type { AuthRepository } from "../../domain/repositories/auth-repository";
 
+/**
+ * Map Prisma User model to domain User entity
+ * Handles enum compatibility between Prisma and domain types
+ */
+function toDomainUser(prismaUser: any): User {
+  return {
+    id: prismaUser.id,
+    email: prismaUser.email,
+    name: prismaUser.name,
+    passwordHash: prismaUser.passwordHash,
+    role: prismaUser.role as User["role"], // Type assertion for enum compatibility
+    status: prismaUser.status as User["status"],
+    createdAt: prismaUser.createdAt,
+    updatedAt: prismaUser.updatedAt,
+  };
+}
+
 export class PrismaAuthRepository implements AuthRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -10,7 +27,7 @@ export class PrismaAuthRepository implements AuthRepository {
       where: { email },
     });
 
-    return user;
+    return user ? toDomainUser(user) : null;
   }
 
   async findById(id: string): Promise<User | null> {
@@ -18,7 +35,7 @@ export class PrismaAuthRepository implements AuthRepository {
       where: { id },
     });
 
-    return user;
+    return user ? toDomainUser(user) : null;
   }
 
   async create(
@@ -28,6 +45,6 @@ export class PrismaAuthRepository implements AuthRepository {
       data,
     });
 
-    return user;
+    return toDomainUser(user);
   }
 }

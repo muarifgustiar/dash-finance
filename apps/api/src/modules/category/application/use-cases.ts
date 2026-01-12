@@ -1,6 +1,6 @@
 import { ErrDuplicate, ErrNotFound, ErrInvalid } from "../../../shared/errors/canonical";
-import type { Category } from "../../domain/entities/category";
-import type { CategoryRepository } from "../../domain/repositories/category-repository";
+import type { Category } from "../domain/entities/category";
+import type { CategoryRepository } from "../domain/repositories/category-repository";
 
 export interface GetCategoriesQuery {
   status?: string;

@@ -19,9 +19,26 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Build arguments for NEXT_PUBLIC_ variables (inlined at build time)
+# Pass these via: docker build --build-arg NEXT_PUBLIC_API_URL=...
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_NAME
+ARG NEXT_PUBLIC_APP_VERSION
+ARG NEXT_PUBLIC_ENABLE_DEBUG
+ARG NEXT_PUBLIC_ENABLE_ANALYTICS
+
+# Export to environment for Next.js build
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
+ENV NEXT_PUBLIC_APP_VERSION=${NEXT_PUBLIC_APP_VERSION}
+ENV NEXT_PUBLIC_ENABLE_DEBUG=${NEXT_PUBLIC_ENABLE_DEBUG}
+ENV NEXT_PUBLIC_ENABLE_ANALYTICS=${NEXT_PUBLIC_ENABLE_ANALYTICS}
+
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV DOCKER_BUILD=true
 
+# Build Next.js app (env vars will be inlined into bundle)
 RUN bun run build:web
 
 # Production stage

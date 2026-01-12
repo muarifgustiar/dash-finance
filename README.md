@@ -123,6 +123,24 @@ yarn exec turbo link
 pnpm exec turbo link
 ```
 
+## Architecture
+
+This project follows Clean Architecture + DDD principles with strict layering and boundary rules.
+
+### 📋 Formal Architecture Specifications
+
+**Source of Truth:** All architecture rules are formally documented as testable specifications in [`openspec/changes/codify-architecture-rules/specs/`](./openspec/changes/codify-architecture-rules/specs/)
+
+**Key Specifications:**
+- **[Clean Architecture Layering](./openspec/changes/codify-architecture-rules/specs/clean-architecture-layering/spec.md)** - Core layering principles, Elysia plugin patterns, scope management
+- **[Boundary Constraints](./openspec/changes/codify-architecture-rules/specs/boundary-constraints/spec.md)** - Module/feature isolation, import restrictions
+- **[Dependency Management](./openspec/changes/codify-architecture-rules/specs/dependency-management/spec.md)** - Pure domain enforcement, shared package roles
+- **[Code Conventions](./openspec/changes/codify-architecture-rules/specs/code-conventions/spec.md)** - Naming, language usage, testing priorities
+
+**Quick Reference:** See [`docs/ARCHITECTURE-QUICK-REFERENCE.md`](./docs/ARCHITECTURE-QUICK-REFERENCE.md) for practical examples.
+
+**AI Agent Instructions:** Architecture rules are also maintained as AI prompts in [`.github/instructions/`](./.github/instructions/) for development assistance.
+
 ## Useful Links
 
 Learn more about the power of Turborepo:

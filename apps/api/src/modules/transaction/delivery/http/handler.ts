@@ -21,7 +21,7 @@ export interface TransactionHandlerDeps {
 
 export function createTransactionHandlers(deps: TransactionHandlerDeps) {
   return {
-    async getAll(query: GetTransactionsQuery, userId?: string, userRole?: string) {
+    async getAll(query: GetTransactionsQuery) {
       const result = await deps.getTransactionsUseCase.execute(query);
 
       const response: ApiResponse<PaginatedResponse<TransactionResponse>> = {

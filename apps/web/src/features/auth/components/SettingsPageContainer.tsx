@@ -11,10 +11,13 @@ import { useRouter } from "next/navigation";
 
 export function SettingsPageContainer() {
   const router = useRouter();
+  
+  // TODO: Replace with actual user data from API/context
+  // This should come from useCurrentUser hook or similar
   const [formData, setFormData] = useState({
-    name: "Putra",
-    email: "putra@example.com",
-    phone: "+62 812-3456-7890",
+    name: "",
+    email: "",
+    phone: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {

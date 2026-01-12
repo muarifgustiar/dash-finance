@@ -7,24 +7,32 @@ import { Input } from "@repo/ui/input";
 import { Label } from "@repo/ui/label";
 import { ArrowLeft, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useCategories } from "../../category/hooks/useCategories";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "../../../lib/api-client";
+import type { ApiResponse } from "@repo/domain/types";
 
-const categories = [
-  { value: "food", label: "Food & Drink" },
-  { value: "transport", label: "Transport" },
-  { value: "fashion", label: "Fashion" },
-  { value: "hobbies", label: "Hobbies" },
-  { value: "income", label: "Income" },
-  { value: "others", label: "Others" },
-] as const;
-
-const budgetOwners = [
-  { value: "personal", label: "Personal" },
-  { value: "family", label: "Family" },
-  { value: "business", label: "Business" },
-] as const;
+interface BudgetOwner {
+  id: string;
+  name: string;
+  code: string | null;
+  status: "ACTIVE" | "INACTIVE";
+}
 
 export function TransactionPageContainer() {
   const router = useRouter();
+  
+  // Fetch categories from API
+  const { data: categories = [], isLoading: isLoadingCategories } = useCategories("ACTIVE");
+  
+  // Fetch budget owners from API
+  const { data: budgetOwners = [], isLoading: isLoadingBudgetOwners } = useQuery({
+    queryKey: ["budgetOwners", "ACTIVE"],
+    queryFn: async () => {
+      const response = await apiRequest<ApiResponse<BudgetOwner[]>>("/budget-owners?status=ACTIVE");
+      return response.data;
+    },
+  });
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -97,11 +105,12 @@ export function TransactionPageContainer() {
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
+                disabled={isLoadingCategories}
               >
-                <option value="">Pilih kategori</option>
+                <option value="">{isLoadingCategories ? "Loading..." : "Pilih kategori"}</option>
                 {categories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
                   </option>
                 ))}
               </select>
@@ -115,11 +124,12 @@ export function TransactionPageContainer() {
                 value={formData.budgetOwner}
                 onChange={(e) => setFormData({ ...formData, budgetOwner: e.target.value })}
                 required
+                disabled={isLoadingBudgetOwners}
               >
-                <option value="">Pilih budget owner</option>
+                <option value="">{isLoadingBudgetOwners ? "Loading..." : "Pilih budget owner"}</option>
                 {budgetOwners.map((owner) => (
-                  <option key={owner.value} value={owner.value}>
-                    {owner.label}
+                  <option key={owner.id} value={owner.id}>
+                    {owner.name}
                   </option>
                 ))}
               </select>
