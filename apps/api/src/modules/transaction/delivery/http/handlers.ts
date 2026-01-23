@@ -3,15 +3,9 @@
  * ✅ Delivery layer - thin handlers that call use cases
  */
 
-import type { Context } from "elysia";
-import type { TransactionModuleContainer } from "../../module.container";
 import { success, error } from "../../../../shared/util/response";
 import { ErrInvalid, ErrNotFound } from "../../../../shared/errors";
-import type {
-  CreateTransactionRequest,
-  UpdateTransactionRequest,
-  GetTransactionsQuery,
-} from "@repo/schema/transaction";
+import type { TransactionModuleContainer } from "./container";
 
 // Helper to map Transaction entity to response DTO
 function toTransactionResponse(transaction: any) {
@@ -30,16 +24,15 @@ function toTransactionResponse(transaction: any) {
 }
 
 export async function createTransactionHandler(
-  ctx: Context,
+  ctx: any,
   container: TransactionModuleContainer
 ) {
   try {
     const body = ctx.body as any;
 
-    // TODO: Get createdBy from authenticated user
-    const createdBy = "00000000-0000-0000-0000-000000000000";
+    const createdBy = (ctx as any).userId || "00000000-0000-0000-0000-000000000000";
 
-    const transaction = await container.getCreateTransactionUseCase().execute({
+    const transaction = await container.createTransactionUseCase.execute({
       budgetOwnerId: body.budgetOwnerId,
       categoryId: body.categoryId,
       date: new Date(body.date),
@@ -60,30 +53,39 @@ export async function createTransactionHandler(
 }
 
 export async function getTransactionsHandler(
-  ctx: Context,
+  ctx: any,
   container: TransactionModuleContainer
 ) {
   try {
     const query = ctx.query as any;
+    const userId = (ctx as any).userId as string | null | undefined;
+    const userRole = (ctx as any).userRole as string | null | undefined;
 
-    const result = await container.getGetTransactionsUseCase().execute({
-      budgetOwnerId: query.budgetOwnerId,
-      categoryId: query.categoryId,
-      categoryIds: query.categoryIds,
-      startDate: query.startDate ? new Date(query.startDate) : undefined,
-      endDate: query.endDate ? new Date(query.endDate) : undefined,
-      year: query.year ? parseInt(query.year) : undefined,
-      page: query.page ? parseInt(query.page) : undefined,
-      limit: query.limit ? parseInt(query.limit) : undefined,
-    });
+    const transactions = await container.getTransactionsUseCase.execute(
+      {
+        budgetOwnerId: query.budgetOwnerId,
+        categoryId: query.categoryId,
+        startDate: query.startDate,
+        endDate: query.endDate,
+        year: query.year,
+      },
+      userId ?? undefined,
+      userRole ?? undefined
+    );
+
+    const page = (query as any).page ?? 1;
+    const limit = (query as any).limit ?? 50;
+    const total = transactions.length;
+    const start = (page - 1) * limit;
+    const items = transactions.slice(start, start + limit);
 
     return success({
-      data: result.transactions.map(toTransactionResponse),
+      data: items.map(toTransactionResponse),
       pagination: {
-        page: result.page,
-        limit: result.limit,
-        total: result.total,
-        totalPages: Math.ceil(result.total / result.limit),
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
       },
     });
   } catch (err) {
@@ -93,41 +95,50 @@ export async function getTransactionsHandler(
 }
 
 export async function getTransactionByIdHandler(
-  ctx: Context,
+  ctx: any,
   container: TransactionModuleContainer
 ) {
   try {
     const { id } = ctx.params as { id: string };
 
-    const transaction = await container.getTransactionRepository().findById(id);
-
-    if (!transaction) {
-      return error(`Transaction with ID ${id} not found`, 404);
-    }
-
+    const transaction = await container.getTransactionByIdUseCase.execute(id);
     return success(toTransactionResponse(transaction));
   } catch (err) {
+    if (err instanceof ErrNotFound) {
+      return error(err.message, 404);
+    }
     console.error("Get transaction by ID error:", err);
     return error("Internal server error", 500);
   }
 }
 
 export async function updateTransactionHandler(
-  ctx: Context,
+  ctx: any,
   container: TransactionModuleContainer
 ) {
   try {
     const { id } = ctx.params as { id: string };
     const body = ctx.body as any;
 
-    const transaction = await container.getUpdateTransactionUseCase().execute({
+    const userId = (ctx as any).userId as string | null | undefined;
+    const userRole = (ctx as any).userRole as string | null | undefined;
+
+    if (!userId || !userRole) {
+      return error("Unauthorized", 401);
+    }
+
+    const transaction = await container.updateTransactionUseCase.execute(
       id,
-      categoryId: body.categoryId,
-      date: body.date ? new Date(body.date) : undefined,
-      amount: body.amount,
-      description: body.description,
-      receiptUrl: body.receiptUrl,
-    });
+      {
+        categoryId: body.categoryId,
+        date: body.date ? new Date(body.date) : undefined,
+        amount: body.amount,
+        description: body.description,
+        receiptUrl: body.receiptUrl,
+      },
+      userId,
+      userRole
+    );
 
     return success(toTransactionResponse(transaction));
   } catch (err) {
@@ -143,13 +154,20 @@ export async function updateTransactionHandler(
 }
 
 export async function deleteTransactionHandler(
-  ctx: Context,
+  ctx: any,
   container: TransactionModuleContainer
 ) {
   try {
     const { id } = ctx.params as { id: string };
 
-    await container.getTransactionRepository().delete(id);
+    const userId = (ctx as any).userId as string | null | undefined;
+    const userRole = (ctx as any).userRole as string | null | undefined;
+
+    if (!userId || !userRole) {
+      return error("Unauthorized", 401);
+    }
+
+    await container.deleteTransactionUseCase.execute(id, userId, userRole);
 
     return success({ message: "Transaction deleted successfully" });
   } catch (err) {

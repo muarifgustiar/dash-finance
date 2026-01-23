@@ -31,18 +31,12 @@ export class UpdateCategoryUseCase {
       }
     }
 
-    // Apply updates
-    let updated = existing;
-    
-    if (dto.name || dto.description !== undefined) {
-      updated = updated.updateInfo(dto.name, dto.description);
-    }
-    
-    if (dto.status) {
-      updated = updated.updateStatus(dto.status);
-    }
+    // Persist changes
+    const updateData: UpdateCategoryData = {};
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.status !== undefined) updateData.status = dto.status;
 
-    // Persist
-    return await this.repository.update(updated);
+    return await this.repository.update(dto.id, updateData);
   }
 }

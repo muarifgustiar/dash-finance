@@ -1,4 +1,4 @@
-import type { ApiError, ApiResponse } from "@repo/domain/types";
+import type { ApiError } from "@repo/domain/types";
 import { ErrorCodes } from "@repo/domain/errors";
 
 /**

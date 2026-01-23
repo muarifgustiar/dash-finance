@@ -3,7 +3,6 @@
  * ✅ Delivery layer - thin handlers that call use cases
  */
 
-import type { Context } from "elysia";
 import type { BudgetModuleContainer } from "../../module.container";
 import { success, error } from "../../../../shared/util/response";
 import { ErrInvalid, ErrDuplicate, ErrNotFound } from "../../../../shared/errors";
@@ -28,7 +27,7 @@ function toBudgetResponse(budget: any) {
 }
 
 export async function createBudgetHandler(
-  ctx: Context,
+  ctx: any,
   container: BudgetModuleContainer
 ) {
   try {
@@ -56,7 +55,7 @@ export async function createBudgetHandler(
 }
 
 export async function getBudgetsHandler(
-  ctx: Context,
+  ctx: any,
   container: BudgetModuleContainer
 ) {
   try {
@@ -75,7 +74,7 @@ export async function getBudgetsHandler(
 }
 
 export async function getBudgetByIdHandler(
-  ctx: Context,
+  ctx: any,
   container: BudgetModuleContainer
 ) {
   try {
@@ -95,7 +94,7 @@ export async function getBudgetByIdHandler(
 }
 
 export async function updateBudgetHandler(
-  ctx: Context,
+  ctx: any,
   container: BudgetModuleContainer
 ) {
   try {
@@ -121,7 +120,7 @@ export async function updateBudgetHandler(
 }
 
 export async function deleteBudgetHandler(
-  ctx: Context,
+  ctx: any,
   container: BudgetModuleContainer
 ) {
   try {

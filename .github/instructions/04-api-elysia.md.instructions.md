@@ -1,13 +1,13 @@
 ---
 applyTo: '**'
 ---
-# API (Bun + Elysia) - Struktur & Aturan (Delivery per Module)
+# API (Bun + Elysia) - Structure & Rules (Delivery per Module)
 
-Dokumen ini menetapkan best practice untuk:
-- Struktur folder API per module (bounded context)
-- Cara menulis routes + handlers yang “thin”
-- Cara module memakai domain shared dari `@repo/domain` tanpa melanggar Clean Architecture
-- Delivery (HTTP) **digabung ke masing-masing module** (bukan terpusat)
+This document establishes best practices for:
+- API folder structure per module (bounded context)
+- How to write "thin" routes + handlers
+- How modules use shared domain from `@repo/domain` without violating Clean Architecture
+- Delivery (HTTP) **integrated into each module** (not centralized)
 
 ---
 
@@ -56,31 +56,31 @@ Kenapa delivery digabung ke module?
 
 ⸻
 
-Domain Shared: @repo/domain (Wajib untuk Shared Core)
+Shared Domain: @repo/domain (Required for Shared Core)
 
-Prinsip
-	•	@repo/domain = core domain yang benar-benar shared lintas apps (api/web/mobile).
-	•	modules/<module>/domain = domain khusus bounded context itu.
+Principles
+	•	@repo/domain = core domain that is truly shared across apps (api/web/mobile).
+	•	modules/<module>/domain = domain specific to that bounded context.
 
-Aturan Import (STRICT)
+Import Rules (STRICT)
 
-✅ Boleh:
-	•	modules/<module>/domain → @repo/domain (hanya jika shared concept memang dipakai)
+✅ Allowed:
+	•	modules/<module>/domain → @repo/domain (only if shared concept is actually used)
 	•	modules/<module>/application → modules/<module>/domain, @repo/domain, shared/errors
 	•	modules/<module>/delivery/http/* → modules/<module>/application, shared/errors, @repo/schema
 	•	modules/<module>/infrastructure/* → modules/<module>/domain, @repo/domain, shared/* (db/util)
 
-❌ Tidak boleh:
-	•	Domain layer (modules/*/domain atau @repo/domain) import:
+❌ Not Allowed:
+	•	Domain layer (modules/*/domain or @repo/domain) importing:
 	•	Elysia
 	•	Firebase SDK
 	•	Zod
 	•	DB clients
-	•	library eksternal apa pun
-	•	modules/<module>/application import dari delivery atau infrastructure
-	•	Cross-module import: modules/a ↔ modules/b (termasuk delivery)
+	•	Any external libraries
+	•	modules/<module>/application importing from delivery or infrastructure
+	•	Cross-module imports: modules/a ↔ modules/b (including delivery)
 
-Catatan: Zod tetap hanya untuk kontrak/validation dan disimpan di @repo/schema.
+Note: Zod remains only for contracts/validation and is stored in @repo/schema.
 
 ⸻
 
@@ -114,75 +114,327 @@ Handler harus “thin”:
 
 ⸻
 
-Komposisi Global App (Minimal)
+Global App Composition (Minimal)
 
-apps/api/src/delivery/http/app.ts hanya:
-	•	setup Elysia global: middleware, plugin, request id, logger, CORS, dsb.
-	•	register routes dari module-module (tanpa tahu detail bisnis)
+apps/api/src/delivery/http/app.ts only:
+	•	setup Elysia global: middleware, plugin, request id, logger, CORS, etc.
+	•	register routes from modules (without knowing business details)
 
-Aturan:
-	•	delivery/http/app.ts tidak boleh import domain/application langsung.
-	•	Ia hanya boleh import fungsi register<Module>Routes() dari setiap module delivery.
+Rules:
+	•	delivery/http/app.ts must not import domain/application directly.
+	•	It may only import register<Module>Routes() functions from each module delivery.
 
 ⸻
 
 Validation (Delivery Only)
-	•	Semua request validation dilakukan di modules/<module>/delivery/http/routes.ts menggunakan schema dari @repo/schema.
-	•	Schema = kontrak HTTP (DTO), bukan domain entity.
-	•	Domain invariants tetap ditegakkan di domain entity/value object (pure TS).
+	•	All request validation performed in modules/<module>/delivery/http/routes.ts using schema from @repo/schema.
+	•	Schema = HTTP contract (DTO), not domain entity.
+	•	Domain invariants still enforced in domain entity/value object (pure TS).
 
 ⸻
 
 Error Mapping (Delivery Only)
-	•	Use case boleh throw canonical errors:
+	•	Use case may throw canonical errors:
 	•	ErrInvalid → 400
 	•	ErrDuplicate → 409
 	•	ErrNotFound → 404
 	•	Unknown → 500
-	•	Mapping status code hanya di delivery handler.
+	•	Status code mapping only in delivery handler.
 
 ⸻
 
-DI (Wajib)
-	•	Use case menerima dependency via constructor (ports/repo interface).
-	•	modules/<module>/module.container.ts memasang:
-	•	concrete repositories/services (infra)
-	•	use cases (application)
-	•	expose dependencies yang dibutuhkan delivery module
+DI (Required) - Elysia Container Plugin (`.decorate()`)
 
-Delivery module (handler) tidak boleh membuat concrete infra sendiri.
+**Principles (STRICT):**
+  •	Use case **MUST** receive dependencies via constructor (ports/repo interface).
+  •	Infrastructure (concrete repo/service) created in outer layer (container), then injected to use case.
+  •	Each module has a **container plugin** (Elysia plugin) that `.decorate()` dependencies to context.
+  •	Routes/handlers get dependencies from `context` (type-safe), not via manual args.
+
+**Pattern (Recommended):**
+1. Create concrete repo/service (infrastructure)
+2. Create use case (application) with constructor injection
+3. Export `Elysia` container plugin that `.decorate()` repo + use case to context
+4. Routes/handlers access via context destructuring
+
+**Elysia Plugin Pattern Benefits:**
+	•	✅ Type-safe dependency access via context
+	•	✅ No manual parameter passing
+	•	✅ Idiomatic Elysia pattern
+	•	✅ Better encapsulation
+	•	✅ Easier testing (mock decorators)
 
 ⸻
 
-Contoh Struktur Module: transaction
+Module Structure Example: user (container plugin)
 
-apps/api/src/modules/transaction/
-  delivery/http/
-    routes.ts
-    handler.ts
-  domain/
-    entities/transaction.ts
-    value-objects/money.ts
-    repositories/transaction-repository.ts
-  application/
-    use-cases/create-transaction.use-case.ts
-    dtos/create-transaction.dto.ts
+apps/api/src/modules/user/
   infrastructure/
-    repositories/firestore-transaction.repository.ts
-    mappers/transaction.mapper.ts
-  module.container.ts
-
-Naming conventions
-	•	routes.ts: export registerTransactionRoutes(app, deps)
-	•	handler.ts: export handler function(s) createTransactionHandler(deps)
-	•	Use case instance suffix: Uc
-	•	Repo concrete: FirestoreTransactionRepository, PostgresTransactionRepository
+    adapters/
+      user.repo.ts                 # makeUserRepo(): port implementation
+  application/
+    use-cases/
+      list-users.use-case.ts       # ListUsersUseCase (constructor DI)
+  delivery/http/
+    container.ts                   # Elysia container plugin (.decorate)
+    routes.ts                      # register routes (using context)
+    handler.ts                     # thin handler (using context)
 
 ⸻
 
-Verify compliance
-	•	Delivery (routes + handlers) berada di dalam masing-masing module ✅
-	•	Dependency tetap inward: delivery → application → domain ← infrastructure ✅
-	•	Domain tetap pure TS, dan shared core domain lewat @repo/domain tanpa dependency eksternal ✅
-	•	Validasi tetap pakai @repo/schema (Zod) hanya di delivery ✅
+DI Implementation Example with Elysia Container Plugin
+
+**1) delivery/http/container.ts - Container plugin (`.decorate()`)**
+```typescript
+// apps/api/src/modules/user/delivery/http/container.ts
+import { Elysia } from "elysia";
+import type { UserRepository } from "../../domain/repositories/user.repository";
+import { makeUserRepo } from "../../infrastructure/adapters/user.repo";
+import { ListUsersUseCase } from "../../application/use-cases/list-users.use-case";
+
+interface UserUseCases {
+  listUsersUseCase: ListUsersUseCase;
+}
+
+export const userContainer = new Elysia({ name: "container:user" })
+  .decorate<"userRepo", UserRepository>("userRepo", makeUserRepo())
+  .decorate<"userUseCases", UserUseCases>(
+    "userUseCases",
+    (() => {
+      const userRepo = makeUserRepo();
+      return {
+        listUsersUseCase: new ListUsersUseCase(userRepo),
+      };
+    })()
+  );
+```
+
+Notes:
+	•	The example above shows `.decorate()` style common in Elysia.
+	•	To avoid double instantiation of repo, ideally create repo once and re-use for other `.decorate()` calls.
+	•	Important: use case still uses constructor DI (repo injected), not `new ListUsersUseCase()` without dependency.
+
+**2) delivery/http/routes.ts - Routes access dependencies from context**
+```typescript
+// apps/api/src/modules/user/delivery/http/routes.ts
+import { Elysia } from "elysia";
+import { userContainer } from "./container";
+import { listUsersHandler } from "./handler";
+
+export const userRoutes = new Elysia({ name: "routes:user" })
+  .use(userContainer)
+  .group("/users", (app) => app.get("/", listUsersHandler));
+```
+
+**3) delivery/http/handler.ts - Handler accesses dependencies from context**
+```typescript
+// apps/api/src/modules/user/delivery/http/handler.ts
+import type { Context } from "elysia";
+import type { ListUsersUseCase } from "../../application/use-cases/list-users.use-case";
+import type { User } from "../../domain/entities/user";
+import { mapHttpError } from "../../../shared/errors/http-mapper";
+
+interface UserContext {
+  userUseCases: {
+    listUsersUseCase: ListUsersUseCase;
+  };
+}
+
+interface ApiResponse<T> {
+  success: true;
+  data: T;
+}
+
+export async function listUsersHandler(
+  { userUseCases }: Context & UserContext
+): Promise<ApiResponse<User[]>> {
+  try {
+    const result = await userUseCases.listUsersUseCase.execute();
+    return { success: true, data: result };
+  } catch (error) {
+    throw mapHttpError(error);
+  }
+}
+```
+
+**4) index.ts - Bootstrap with plugin composition**
+```typescript
+// apps/api/src/index.ts
+import { createApp } from "./delivery/http/app";
+import { prisma } from "./shared/db/prisma";
+
+// Module containers
+import { createTransactionModule } from "./modules/transaction/module.container";
+import { createCategoryModule } from "./modules/category/module.container";
+
+// Routes (each routes module already .use(container) internally)
+import { userRoutes } from "./modules/user/delivery/http/routes";
+
+async function bootstrap(): Promise<void> {
+  await prisma.$connect();
+
+  // 1. Initialize modules (DI wiring)
+  const transactionModule = createTransactionModule(prisma);
+  const categoryModule = createCategoryModule(prisma);
+
+  // 2. Create app with global middleware
+  const app = createApp();
+
+  // 3. Register module routes
+  app.use(userRoutes);
+
+  // 4. Start server
+  app.listen(3001);
+}
+
+bootstrap();
+```
+
+⸻
+
+Naming Conventions
+  •	delivery/http/container.ts: export `userContainer` (Elysia plugin) with name `container:<module>`
+  •	delivery/http/routes.ts: export `<module>Routes` that `.use(<module>Container)`
+	•	delivery/http/handler.ts: export handler functions with context destructuring
+	•	Use case instance suffix: `UseCase`
+	•	Concrete repo: `PrismaTransactionRepository`, `FirestoreTransactionRepository`
+
+⸻
+
+## Testing & Test Coverage (Required)
+
+### Unit Test Principles (STRICT)
+
+**Critical Rules:**
+	•	✅ **No production code until failing tests exist** - Write tests first (TDD approach). Tests must fail before implementation.
+	•	✅ **Each spec requirement maps to ≥1 test** - Every requirement in spec must have at least 1 test case.
+	•	✅ **Never edit unrelated packages** - Only edit files within the module boundary being worked on.
+	•	✅ **Update spec when ambiguity is found** - If requirement is unclear during implementation, update spec.md first before continuing coding.
+	•	✅ **Code coverage minimum 80%** - Domain and Application layers must have ≥80% coverage.
+
+### Test Organization per Module
+
+```text
+modules/<module>/
+  domain/__tests__/
+    entities/*.test.ts          # Entity logic, invariants, validation
+    value-objects/*.test.ts     # Value object immutability, equality
+    services/*.test.ts          # Domain service business logic
+  application/__tests__/
+    use-cases/*.test.ts         # Use case orchestration (mock repositories)
+  infrastructure/__tests__/
+    repositories/*.test.ts      # Integration tests (in-memory DB/mocked services)
+    mappers/*.test.ts           # Data transformation accuracy
+  delivery/http/__tests__/
+    handler.test.ts             # HTTP handler response mapping (in-memory Elysia)
+```
+
+### Test Coverage Requirements
+
+**Domain Layer (Target: 90-100%)**
+	•	Entity constructors & factory methods
+	•	Business rule validation
+	•	Value object equality & immutability
+	•	Domain service logic
+	•	Edge cases & error conditions
+
+**Application Layer (Target: 85-95%)**
+	•	Use case happy path
+	•	Use case error scenarios
+	•	DTO validation & transformation
+	•	Repository interaction (mocked)
+	•	Transaction boundaries
+
+**Infrastructure Layer (Target: 70-85%)**
+	•	Repository CRUD operations (integration tests)
+	•	Data mapping accuracy (model ↔ domain)
+	•	Error handling (DB constraints, connection issues)
+	•	Query correctness
+
+**Delivery Layer (Target: 75-85%)**
+	•	Handler request/response mapping
+	•	Error → HTTP status code mapping
+	•	Schema validation at boundary
+	•	In-memory request tests via `app.handle(new Request(...))`
+
+### Testing Tools & Commands
+
+**Framework**: `bun:test` (built-in Bun test runner)
+
+**Commands**:
+	•	Run all tests: `bun test`
+	•	Run module tests: `bun test modules/transaction`
+	•	Watch mode: `bun test --watch`
+	•	Coverage report: `bun test --coverage`
+
+**Mocking**:
+	•	Mock repositories in use case tests (interface-based DI)
+	•	Use in-memory database for infrastructure tests
+	•	Mock external services (Firebase, HTTP clients)
+	•	No real network/database calls in unit tests
+
+### Test-First Workflow (TDD)
+
+1. **Red**: Write failing test for spec requirement
+2. **Green**: Write minimal code to make test pass
+3. **Refactor**: Improve code while keeping tests green
+4. **Repeat**: Next requirement
+
+**Example**:
+```typescript
+// 1. RED: Test fails (use case doesn't exist yet)
+import { describe, it, expect, beforeEach } from "bun:test";
+import type { TransactionRepository } from "../domain/repositories/transaction.repository";
+import type { Transaction } from "../domain/entities/transaction";
+import { CreateTransactionUseCase } from "./create-transaction.use-case";
+
+interface MockRepository extends TransactionRepository {
+  save: jest.Mock<Promise<Transaction>, [Transaction]>;
+}
+
+function createMockRepository(): MockRepository {
+  return {
+    save: jest.fn(),
+    findById: jest.fn(),
+    findAll: jest.fn(),
+  } as MockRepository;
+}
+
+describe('CreateTransactionUseCase', () => {
+  it('should create transaction with valid data', async () => {
+    const mockRepo = createMockRepository();
+    const useCase = new CreateTransactionUseCase(mockRepo);
+    
+    const command = { amount: 1000, categoryId: "cat-1", userId: "user-1" };
+    const result = await useCase.execute(command);
+    
+    expect(result.amount).toBe(1000);
+    expect(mockRepo.save).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 2. GREEN: Implement minimal code to pass
+// 3. REFACTOR: Clean up implementation
+```
+
+### Coverage Enforcement
+
+**Pre-commit Hook** (recommended):
+	•	Run tests before commit
+	•	Block commit if coverage < 80%
+	•	Format: `bun test --coverage --coverage-threshold=80`
+
+**CI/CD Pipeline** (required):
+	•	Run full test suite
+	•	Generate coverage report
+	•	Fail build if coverage drops below threshold
+	•	Report coverage to team dashboard
+
+⸻
+
+Verify Compliance
+	•	Delivery (routes + handlers) located within each module ✅
+	•	Dependency remains inward: delivery → application → domain ← infrastructure ✅
+	•	Domain remains pure TS, and shared core domain via @repo/domain without external dependencies ✅
+	•	Validation still uses @repo/schema (Zod) only in delivery ✅
 

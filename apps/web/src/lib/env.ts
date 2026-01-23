@@ -87,9 +87,14 @@ function getCurrentEnvironment(): Environment {
 function buildEnvConfig(): EnvConfig {
   const currentEnv = getCurrentEnvironment();
   
+  // Provide sensible defaults for development to prevent build failures
+  const defaultApiUrl = currentEnv === "production" 
+    ? undefined 
+    : "http://localhost:3001";
+  
   const config: EnvConfig = {
     // API Configuration
-    apiUrl: getEnvVar("NEXT_PUBLIC_API_URL"),
+    apiUrl: getEnvVar("NEXT_PUBLIC_API_URL", defaultApiUrl),
     
     // App Configuration
     appName: getEnvVar("NEXT_PUBLIC_APP_NAME", "Dash Finance"),
@@ -105,11 +110,17 @@ function buildEnvConfig(): EnvConfig {
     enableDebug: getBooleanEnvVar("NEXT_PUBLIC_ENABLE_DEBUG", currentEnv === "development"),
   };
   
-  // Validate API URL format
-  try {
-    new URL(config.apiUrl);
-  } catch {
-    throw new Error(`Invalid API URL: ${config.apiUrl}`);
+  // Validate API URL format (skip during build if URL is placeholder)
+  if (config.apiUrl && config.apiUrl !== "placeholder") {
+    try {
+      new URL(config.apiUrl);
+    } catch (error) {
+      console.warn(`Invalid API URL: ${config.apiUrl}`, error);
+      // Don't throw during build, just warn
+      if (currentEnv === "production") {
+        throw new Error(`Invalid API URL in production: ${config.apiUrl}`);
+      }
+    }
   }
   
   return config;

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Label } from "@repo/ui/label";
-import { Card } from "@repo/ui/card";
+import { Card, CardContent } from "@repo/ui/card";
 import { Zap } from "lucide-react";
 import { useLogin } from "../hooks/use-auth";
 
@@ -28,8 +28,9 @@ export function LoginContainer() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-4">
-      <Card className="w-full max-w-md p-8 shadow-xl">
-        <div className="mb-8 flex flex-col items-center">
+      <Card className="w-full max-w-md shadow-xl">
+        <CardContent className="p-8">
+          <div className="mb-8 flex flex-col items-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
             <Zap className="h-8 w-8 text-white" />
           </div>
@@ -81,6 +82,7 @@ export function LoginContainer() {
             </a>
           </div>
         </form>
+        </CardContent>
       </Card>
     </div>
   );

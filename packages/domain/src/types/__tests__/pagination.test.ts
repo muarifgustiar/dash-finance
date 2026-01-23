@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { calculatePaginationMeta, type PaginationMeta } from "../pagination";
+import { calculatePaginationMeta } from "../pagination";
 
 describe("calculatePaginationMeta", () => {
   describe("Basic calculations", () => {
